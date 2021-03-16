@@ -1,42 +1,36 @@
 #!/bin/bash -e
 
-filename=$(mktemp)
+directory_date="$(date '+%Y-%m-%d-%H-%M-%S')/"
+mkdir "/tmp/${directory_date}"
+export AWS_S3_BUCKET="backup-mariadb-tvv-cus-stagging"
+export AWS_DEFAULT_REGION=us-east-1
+export AWS_ACCESS_KEY_ID="AKIAZ5XZYFHPR7R7BRIF"
+export AWS_SECRET_ACCESS_KEY="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"
 
-
-echo "[$(date -Iseconds)] Started mysqldump"
-
-mysqldump -h "${MYSQL_HOST}" -P "${MYSQL_PORT}" -u "${MYSQL_USER}" -p"${MYSQL_PASSWORD}" "${MYSQL_DATABASE}" > "${filename}"
-
-echo "[$(date -Iseconds)] Compressing mysqldump"
-
-gzip "${filename}"
-
-
-if [[ -v "AWS_ACCESS_KEY_ID" ]]; then
-
-	s3filename="${AWS_S3_FILE_PREFIX}-$(date +%s).sql.gz"
-
-	echo "[$(date -Iseconds)] Started s3 upload"
-	if [[ -v "AWS_ENDPOINT_URL" ]];then
-		aws --endpoint-url ${AWS_ENDPOINT_URL} s3 cp "${filename}.gz" "s3://${AWS_S3_BUCKET}/${s3filename}"
-	else
-		aws s3 cp "${filename}.gz" "s3://${AWS_S3_BUCKET}/${s3filename}"
-	fi
-
-	echo "[$(date -Iseconds)] Done"
-fi
-
-if [[ -v "GOOGLE_APPLICATION_CREDENTIALS" ]]; then
-
-	gcsfilename="${GCP_GCS_FILE_PREFIX}-$(date +%s).sql.gz"
-
-	gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
-
-        echo "[$(date -Iseconds)] Started gcs upload"
-        gsutil cp "${filename}.gz" "gs://${GCP_GCS_BUCKET}/${gcsfilename}"
-
-        echo "[$(date -Iseconds)] Done"
-fi
-
-
-rm -rf "${filename}.gz"
+for file_conf in /conf-db/*.conf
+do
+	echo "$file_conf"
+	if [[ -f $file_conf ]]; then
+		source $file_conf
+		name_config=$(basename "$file_conf" .conf)
+		DBS=$(mysql -h ${MYSQL_HOST} -P "${MYSQL_PORT}" -u "${MYSQL_USER}" -p"${MYSQL_PASSWORD}" -Bse 'show databases')
+    	for MYSQL_DATABASE in ${DBS[@]}
+		do
+			echo "******"
+			echo "[$(date -Iseconds)] Started mysqldump"
+			echo "Database: "$MYSQL_DATABASE
+			
+			FILENAME="${directory_date}${name_config}-${MYSQL_DATABASE}.sql"
+			FILENAME_TMP="/tmp/${FILENAME}"
+			echo "[$(date -Iseconds)] File -> ${FILENAME}"
+			echo "${MYSQL_PORT}"
+			mysqldump --single-transaction -h "${MYSQL_HOST}" -P "${MYSQL_PORT}" -u "${MYSQL_USER}" -p"${MYSQL_PASSWORD}" "${MYSQL_DATABASE}" > "${FILENAME_TMP}"
+			echo "[$(date -Iseconds)] Compressing dump"
+			gzip "${FILENAME_TMP}"
+			echo "[$(date -Iseconds)] Started s3 upload"
+			aws s3 cp "${FILENAME_TMP}.gz" "s3://${AWS_S3_BUCKET}/${FILENAME}.gz"
+			echo "[$(date -Iseconds)] Done"
+			rm -rf "${FILENAME}.gz"
+		done
+    fi
+done

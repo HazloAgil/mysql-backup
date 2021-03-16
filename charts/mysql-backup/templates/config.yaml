@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "fullname" . }}-config
+data:
+  WORDPRESS_DATABASE_NAME: {{ .Values.configs.WORDPRESS_DATABASE_NAME | quote}}
+  WORDPRESS_LAST_NAME: {{ .Values.configs.WORDPRESS_LAST_NAME | quote  }}
+  WORDPRESS_EMAIL: {{ .Values.configs.WORDPRESS_EMAIL | quote }}
+  WORDPRESS_FIRST_NAME: {{ .Values.configs.WORDPRESS_FIRST_NAME | quote }}
+  TINI_SUBREAPER: {{ .Values.configs.TINI_SUBREAPER | quote  }}
+  WORDPRESS_SCHEME: {{ .Values.configs.WORDPRESS_SCHEME | quote }}
+  WORDPRESS_TABLE_PREFIX: {{ .Values.configs.WORDPRESS_TABLE_PREFIX | quote}}
+  WORDPRESS_BLOG_NAME: {{ .Values.configs.WORDPRESS_BLOG_NAME | quote }}
+  WORDPRESS_RESET_DATA_PERMISSIONS: {{ .Values.configs.WORDPRESS_RESET_DATA_PERMISSIONS | quote  }}
+  WP_CACHE: {{ .Values.configs.WP_CACHE | quote }}
+  WORDPRESS_SKIP_INSTALL: {{ .Values.configs.WORDPRESS_SKIP_INSTALL | quote  }}
