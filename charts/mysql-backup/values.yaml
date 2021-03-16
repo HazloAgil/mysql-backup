@@ -4,8 +4,8 @@
 envDeploy: dev
 replicaCount: 1
 image:
-  repository: draft
-  tag: dev
+  repository: harbor.hazloagil.com/hazloagil/mysql-backup
+  tag: 0.3.6
   pullPolicy: IfNotPresent
 # define environment variables here as a map of key: value
 
